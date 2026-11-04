@@ -157,10 +157,11 @@
                 if (data.history && data.history.length > 0) {
                     data.history.forEach((h, index) => {
                         const hPayDate = h.payDate || h.startDate;
+                        const amount = (h.months || 1) * 80;
                         historyHtml += `
                             <div class="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-xl text-xs mb-1.5 border border-slate-100">
                                 <div>
-                                    <span class="font-semibold text-slate-700">繳費：${hPayDate}</span>
+                                    <span class="font-semibold text-slate-700">繳費：${hPayDate} ($${amount})</span>
                                     <span class="text-slate-400 mx-1">|</span>
                                     <span class="text-slate-600">起算：${h.startDate} (${h.months}個月)</span>
                                     <span class="text-slate-400 mx-1">|</span>
