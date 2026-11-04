@@ -38,7 +38,7 @@
                 <span>🔒</span> 請輸入管理員密碼以解鎖編輯與刪除權限：
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto">
-                <input type="password" id="admin-password-input" placeholder="預設密碼: 0000" class="px-3 py-1.5 border border-red-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                <input type="password" id="admin-password-input" placeholder="預設密碼: 0625" class="px-3 py-1.5 border border-red-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500">
                 <button onclick="verifyAdminPassword()" class="px-4 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition">確認解鎖</button>
             </div>
         </div>
@@ -122,16 +122,13 @@
                 
                 let currentStatusText = "尚無繳費紀錄";
                 let badgeColor = "bg-slate-100 text-slate-600 border border-slate-200";
-                let payDateStr = "未記錄";
-                let startDateStr = "-";
-                let expiryDateStr = "-";
+                let displayExpiryStr = "尚無";
                 let nextSuggestedStartDate = todayStr;
 
                 if (data.history && data.history.length > 0) {
                     const latest = data.history[data.history.length - 1];
-                    payDateStr = latest.payDate || latest.startDate;
-                    startDateStr = latest.startDate;
-                    expiryDateStr = latest.expiryDate;
+                    const expiryDateStr = latest.expiryDate;
+                    displayExpiryStr = expiryDateStr;
                     
                     // 自動以上一筆的到期日作為下一次續費的預設起算日
                     nextSuggestedStartDate = expiryDateStr;
@@ -170,7 +167,7 @@
                                     <span class="text-slate-500">到期：${h.expiryDate}</span>
                                     <div class="text-slate-400 mt-0.5">${h.note || '無備註'}</div>
                                 </div>
-                                ${isAdminLoggedIn ? `<button onclick="deleteHistoryItem('${m.id}', ${index})" class="text-rose-600 hover:text-rose-800 font-medium px-2 py-1 bg-rose-50 rounded-lg hover:bg-rose-100 transition">刪除此筆</button>` : ''}
+                                ${isAdminLoggedIn ? `<button onclick="deleteHistoryItem('${m.id}',${index})" class="text-rose-600 hover:text-rose-800 font-medium px-2 py-1 bg-rose-50 rounded-lg hover:bg-rose-100 transition">刪除此筆</button>` : ''}
                             </div>
                         `;
                     });
@@ -188,7 +185,7 @@
                             </div>
                             <div>
                                 <h3 class="font-bold text-slate-900 text-base">${m.name}</h3>
-                                <p class="text-xs text-slate-400">繳費日期：<span class="font-medium text-slate-600">${payDateStr}</span> ｜ 起算日期：<span class="font-medium text-slate-600">${startDateStr}</span></p>
+                                <p class="text-xs text-slate-400">本期到期日：<span class="font-bold text-slate-700">${displayExpiryStr}</span></p>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -234,93 +231,4 @@
                         </div>
                     </div>
                 `;
-                container.appendChild(card);
-            });
-        }
-
-        window.toggleAdminMode = function() {
-            if (isAdminLoggedIn) {
-                isAdminLoggedIn = false;
-                document.getElementById('admin-toggle-btn').innerText = "管理員模式";
-                document.getElementById('admin-auth-panel').classList.add('hidden');
-                renderUI();
-                alert("已登出管理員模式");
-            } else {
-                const authPanel = document.getElementById('admin-auth-panel');
-                authPanel.classList.toggle('hidden');
-            }
-        }
-
-        window.verifyAdminPassword = function() {
-            const pwd = document.getElementById('admin-password-input').value;
-            if (pwd === ADMIN_SECRET_CODE) {
-                isAdminLoggedIn = true;
-                document.getElementById('admin-auth-panel').classList.add('hidden');
-                document.getElementById('admin-toggle-btn').innerText = "退出管理員";
-                document.getElementById('admin-password-input').value = "";
-                renderUI();
-                alert("管理員驗證成功！");
-            } else {
-                alert("密碼錯誤！");
-            }
-        }
-
-        window.toggleEditPanel = function(memberId) {
-            const panel = document.getElementById(`edit-panel-${memberId}`);
-            panel.classList.toggle('hidden');
-        }
-
-        window.saveMemberData = async function(memberId) {
-            const payDate = document.getElementById(`pay-date-${memberId}`).value;
-            const startDate = document.getElementById(`start-date-${memberId}`).value;
-            const months = parseInt(document.getElementById(`months-${memberId}`).value) || 1;
-            const note = document.getElementById(`note-${memberId}`).value;
-
-            if (!payDate || !startDate) {
-                alert("請完整填寫繳費日期與起算日期！");
-                return;
-            }
-
-            let start = new Date(startDate);
-            start.setMonth(start.getMonth() + months);
-            const expiryDate = start.toISOString().split('T')[0];
-
-            if (!membersData[memberId]) {
-                membersData[memberId] = { name: defaultMembers.find(m => m.id === memberId).name, history: [] };
-            }
-
-            membersData[memberId].history.push({
-                payDate,
-                startDate,
-                months,
-                expiryDate,
-                note
-            });
-
-            try {
-                await setDoc(doc(db, "youtube_family_v2", memberId), membersData[memberId]);
-                alert("已成功儲存至雲端！");
-                renderUI();
-            } catch (error) {
-                console.error("儲存失敗:", error);
-                alert("儲存失敗，請檢查網路。");
-            }
-        }
-
-        window.deleteHistoryItem = async function(memberId, historyIndex) {
-            if (!confirm("確定要刪除這筆紀錄嗎？")) return;
-
-            membersData[memberId].history.splice(historyIndex, 1);
-
-            try {
-                await setDoc(doc(db, "youtube_family_v2", memberId), membersData[memberId]);
-                alert("已成功刪除該筆紀錄！");
-                renderUI();
-            } catch (error) {
-                console.error("刪除失敗:", error);
-                alert("刪除失敗，請再試一次。");
-            }
-        }
-    </script>
-</body>
-</html>
+                container
