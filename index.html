@@ -13,9 +13,9 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <!-- 標題與狀態列 -->
-        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 gap-4">
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
                     <span class="text-red-600">▶</span> YouTube Premium 家庭方案
@@ -32,8 +32,24 @@
             </div>
         </header>
 
+        <!-- 銀行轉帳資訊卡 (方便成員複製) -->
+        <section class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+                <div class="text-xs text-slate-400 font-medium flex items-center gap-1">
+                    <span>💳</span> 匯款轉帳資訊（每人每期 $80）
+                </div>
+                <div class="text-lg font-bold tracking-wide" id="bank-info-text">
+                    銀行代碼：013 ｜ 帳號：1234-5678-9012-3456
+                </div>
+                <div class="text-xs text-slate-400">請轉帳後通知管理員或於下方留言板告知</div>
+            </div>
+            <button onclick="copyBankInfo()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-xl transition border border-white/10 flex items-center gap-1.5 shrink-0">
+                <span>📋</span> 一鍵複製帳號
+            </button>
+        </section>
+
         <!-- 管理員驗證面板 (預設隱藏) -->
-        <div id="admin-auth-panel" class="hidden bg-red-50 border border-red-200 p-4 rounded-2xl mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div id="admin-auth-panel" class="hidden bg-red-50 border border-red-200 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="text-sm text-red-800 font-medium flex items-center gap-2">
                 <span>🔒</span> 請輸入管理員密碼以解鎖編輯與刪除權限：
             </div>
@@ -47,12 +63,41 @@
         <main id="members-container" class="space-y-4">
             <!-- 動態載入成員卡片 -->
         </main>
+
+        <!-- 小小留言板區塊 -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span>💬</span> 小小留言板
+            </h2>
+            
+            <!-- 發表留言表單 -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1">您的名字</label>
+                        <input type="text" id="guest-name" placeholder="例如：單" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs text-slate-500 mb-1">想說的話 / 匯款通知</label>
+                        <input type="text" id="guest-message" placeholder="例如：已轉帳 $80，請幫我對帳！" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button onclick="postMessage()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-lg transition">送出留言</button>
+                </div>
+            </div>
+
+            <!-- 留言列表 -->
+            <div id="messages-container" class="space-y-2">
+                <div class="text-xs text-slate-400 italic py-2">載入留言中...</div>
+            </div>
+        </section>
     </div>
 
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDocs, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ==================== 您的 Firebase 設定 ====================
         const firebaseConfig = {
@@ -65,15 +110,12 @@
         };
         // ============================================================
 
-        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 管理員密碼設定 (可自行修改)
-        const ADMIN_SECRET_CODE = "0000";
+        const ADMIN_SECRET_CODE = "0625";
         let isAdminLoggedIn = false;
 
-        // 五位成員預設名單
         const defaultMembers = [
             { id: "member_1", name: "單" },
             { id: "member_2", name: "李汪" },
@@ -83,11 +125,22 @@
         ];
 
         let membersData = {};
+        let messagesData = [];
 
-        // 頁面載入時抓取雲端資料
         window.addEventListener('DOMContentLoaded', async () => {
             await fetchCloudData();
+            await fetchMessages();
         });
+
+        // 一鍵複製銀行帳號
+        window.copyBankInfo = function() {
+            const textToCopy = "013 1234567890123456";
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert("已成功複製銀行帳號資訊！");
+            }).catch(err => {
+                alert("複製失敗，請手動複製。");
+            });
+        }
 
         async function fetchCloudData() {
             const statusEl = document.getElementById('sync-status');
@@ -110,11 +163,98 @@
                 console.error("連線錯誤:", error);
                 statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> 雲端連線失敗`;
                 statusEl.className = "text-xs px-3 py-1.5 rounded-full bg-red-50 text-red-700 font-medium flex items-center gap-1.5";
-                alert("無法連線至雲端資料庫，請確認 Firestore 資料庫是否已經在 Firebase 控制台中建立。");
             }
         }
 
-        // 渲染畫面
+        // 抓取留言板資料
+        async function fetchMessages() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "youtube_family_messages"));
+                messagesData = [];
+                querySnapshot.forEach((docSnap) => {
+                    messagesData.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                // 依時間排序（新留言在上面或下面皆可，這裡依時間舊到新排序）
+                messagesData.sort((a, b) => new Date(a.time) - new Date(b.time));
+                renderMessages();
+            } catch (error) {
+                console.error("載入留言失敗:", error);
+            }
+        }
+
+        // 渲染留言板
+        function renderMessages() {
+            const container = document.getElementById('messages-container');
+            if (messagesData.length === 0) {
+                container.innerHTML = `<div class="text-xs text-slate-400 italic py-2">目前沒有留言，留個言打個招呼吧！</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            messagesData.forEach((msg) => {
+                const div = document.createElement('div');
+                div.className = "flex items-start justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs gap-2";
+                div.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-bold text-slate-800">${escapeHtml(msg.name)}</span>
+                            <span class="text-slate-400 text-[10px]">${msg.time}</span>
+                        </div>
+                        <p class="text-slate-600 break-all">${escapeHtml(msg.message)}</p>
+                    </div>
+                    ${isAdminLoggedIn ? `<button onclick="deleteMessage('${msg.id}')" class="text-rose-600 hover:text-rose-800 font-medium px-2 py-1 bg-rose-50 rounded-lg hover:bg-rose-100 transition shrink-0">刪除</button>` : ''}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 送出留言
+        window.postMessage = async function() {
+            const name = document.getElementById('guest-name').value.trim();
+            const message = document.getElementById('guest-message').value.trim();
+
+            if (!name || !message) {
+                alert("請填寫名字與留言內容！");
+                return;
+            }
+
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            try {
+                await addDoc(collection(db, "youtube_family_messages"), {
+                    name,
+                    message,
+                    time: timeStr
+                });
+                document.getElementById('guest-message').value = '';
+                await fetchMessages();
+                alert("留言成功送出！");
+            } catch (error) {
+                console.error("送出留言失敗:", error);
+                alert("送出失敗，請檢查網路。");
+            }
+        }
+
+        // 刪除留言 (管理員權限)
+        window.deleteMessage = async function(msgId) {
+            if (!confirm("確定要刪除這則留言嗎？")) return;
+            try {
+                await deleteDoc(doc(db, "youtube_family_messages", msgId));
+                await fetchMessages();
+            } catch (error) {
+                console.error("刪除留言失敗:", error);
+                alert("刪除失敗。");
+            }
+        }
+
+        // 防止 XSS 簡易跳脫
+        function escapeHtml(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
         function renderUI() {
             const container = document.getElementById('members-container');
             container.innerHTML = '';
@@ -131,13 +271,15 @@
                 let payDateStr = "未記錄";
                 let startDateStr = "-";
                 let expiryDateStr = "-";
+                let nextSuggestedStartDate = todayStr;
 
                 if (data.history && data.history.length > 0) {
                     const latest = data.history[data.history.length - 1];
-                    payDateStr = latest.payDate || latest.startDate; // 相容舊資料
+                    payDateStr = latest.payDate || latest.startDate;
                     startDateStr = latest.startDate;
                     expiryDateStr = latest.expiryDate;
-                    
+                    nextSuggestedStartDate = expiryDateStr;
+
                     const expiryObj = new Date(expiryDateStr);
                     expiryObj.setHours(0, 0, 0, 0);
                     
@@ -149,11 +291,7 @@
                             currentStatusText = `剩 ${diffDays} 天到期 (${expiryDateStr})`;
                             badgeColor = "bg-amber-50 text-amber-700 border border-amber-300 font-bold";
                         } else {
-                            currentStatusText = `使用中 (至 ${expiryDateStr})`;
-                            badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-200";
-                        }
-                    } else {
-                        currentStatusText = `已過期 (${expiryDateStr})`;
+                            currentStatusText = `使用中 (至 ${expiryDateStr})`; badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-200"; } } else { currentStatusText = `已過期 (${expiryDateStr})`;
                         badgeColor = "bg-rose-50 text-rose-700 border border-rose-300 font-bold";
                     }
                 }
@@ -214,128 +352,8 @@
                         <h4 class="text-xs font-bold text-slate-700">新增繳費紀錄 / 修正資料</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
-                                <label class="block text-xs text-slate-500 mb-1">繳費日期</label>
-                                <input type="date" id="pay-date-${m.id}" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
+                                <label class="block text-xs text-slate-500 mb-1">繳費日期 (實際付錢日)</label>
+                                <input type="date" id="pay-date-${m.id}" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white" value="${todayStr}">
                             </div>
                             <div>
-                                <label class="block text-xs text-slate-500 mb-1">起算日期</label>
-                                <input type="date" id="start-date-${m.id}" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-slate-500 mb-1">購買月數</label>
-                                <input type="number" id="months-${m.id}" value="1" min="1" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-500 mb-1">備註說明</label>
-                            <input type="text" id="note-${m.id}" placeholder="例如：轉帳繳費 / 補登紀錄" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
-                        </div>
-                        <div class="flex justify-end gap-2">
-                            <button onclick="toggleEditPanel('${m.id}')" class="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-medium rounded-lg">取消</button>
-                            <button onclick="saveMemberData('${m.id}')" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700">儲存至雲端</button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-
-                // 預填今天的日期
-                const payDateInput = document.getElementById(`pay-date-${m.id}`);
-                const startDateInput = document.getElementById(`start-date-${m.id}`);
-                if(payDateInput) payDateInput.value = todayStr;
-                if(startDateInput) startDateInput.value = todayStr;
-            });
-        }
-
-        // 切換管理員解鎖面板
-        window.toggleAdminMode = function() {
-            if (isAdminLoggedIn) {
-                isAdminLoggedIn = false;
-                document.getElementById('admin-toggle-btn').innerText = "管理員模式";
-                document.getElementById('admin-auth-panel').classList.add('hidden');
-                renderUI();
-                alert("已登出管理員模式");
-            } else {
-                const authPanel = document.getElementById('admin-auth-panel');
-                authPanel.classList.toggle('hidden');
-            }
-        }
-
-        // 驗證管理員密碼
-        window.verifyAdminPassword = function() {
-            const pwd = document.getElementById('admin-password-input').value;
-            if (pwd === ADMIN_SECRET_CODE) {
-                isAdminLoggedIn = true;
-                document.getElementById('admin-auth-panel').classList.add('hidden');
-                document.getElementById('admin-toggle-btn').innerText = "退出管理員";
-                document.getElementById('admin-password-input').value = "";
-                renderUI();
-                alert("管理員驗證成功！現在可以進行編輯與刪除紀錄。");
-            } else {
-                alert("密碼錯誤！");
-            }
-        }
-
-        // 切換單一成員編輯面板
-        window.toggleEditPanel = function(memberId) {
-            const panel = document.getElementById(`edit-panel-${memberId}`);
-            panel.classList.toggle('hidden');
-        }
-
-        // 儲存新紀錄到雲端
-        window.saveMemberData = async function(memberId) {
-            const payDate = document.getElementById(`pay-date-${memberId}`).value;
-            const startDate = document.getElementById(`start-date-${memberId}`).value;
-            const months = parseInt(document.getElementById(`months-${memberId}`).value) || 1;
-            const note = document.getElementById(`note-${memberId}`).value;
-
-            if (!payDate || !startDate) {
-                alert("請完整選擇繳費日期與起算日期！");
-                return;
-            }
-
-            // 依據「起算日期」計算到期日
-            let start = new Date(startDate);
-            start.setMonth(start.getMonth() + months);
-            const expiryDate = start.toISOString().split('T')[0];
-
-            if (!membersData[memberId]) {
-                membersData[memberId] = { name: defaultMembers.find(m => m.id === memberId).name, history: [] };
-            }
-
-            // 新增一筆紀錄到歷史陣列中（包含 payDate 與 startDate）
-            membersData[memberId].history.push({
-                payDate,
-                startDate,
-                months,
-                expiryDate,
-                note
-            });
-
-            try {
-                await setDoc(doc(db, "youtube_family_v2", memberId), membersData[memberId]);
-                alert("已成功儲存至雲端！");
-                renderUI();
-            } catch (error) {
-                console.error("儲存失敗:", error);
-                alert("儲存失敗，請檢查網路或 Firebase 權限。");
-            }
-        }
-
-        // 刪除指定的歷史紀錄項目
-        window.deleteHistoryItem = async function(memberId, historyIndex) {
-            if (!confirm("確定要刪除這筆紀錄嗎？")) return;
-
-            membersData[memberId].history.splice(historyIndex, 1);
-
-            try {
-                await setDoc(doc(db, "youtube_family_v2", memberId), membersData[memberId]);
-                alert("已成功刪除該筆紀錄！");
-                renderUI();
-            } catch (error) {
-                console.error("刪除失敗:", error);
-                alert("刪除失敗，請再試一次。");
-            }
-        }
-    </script>
-</body>
-</html>
+                                <label class="block text-xs text-slate-500 mb-1">起算日期 (方案生效日)</label>
