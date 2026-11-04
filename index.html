@@ -94,7 +94,6 @@
             try {
                 const querySnapshot = await getDocs(collection(db, "youtube_family_v2"));
                 if (querySnapshot.empty) {
-                    // 若雲端無資料，初始化寫入預設值
                     for (let m of defaultMembers) {
                         membersData[m.id] = { name: m.name, history: [] };
                         await setDoc(doc(db, "youtube_family_v2", m.id), membersData[m.id]);
@@ -127,52 +126,50 @@
             defaultMembers.forEach(m => {
                 const data = membersData[m.id] || { name: m.name, history: [] };
                 
-                // 計算目前狀態與提醒標籤
                 let currentStatusText = "尚無繳費紀錄";
                 let badgeColor = "bg-slate-100 text-slate-600 border border-slate-200";
-                let paymentDateStr = "未記錄";
+                let payDateStr = "未記錄";
+                let startDateStr = "-";
                 let expiryDateStr = "-";
 
                 if (data.history && data.history.length > 0) {
-                    // 抓取最後一筆或最新的有效紀錄
                     const latest = data.history[data.history.length - 1];
-                    paymentDateStr = latest.startDate; // 取得最近的繳費日期
+                    payDateStr = latest.payDate || latest.startDate; // 相容舊資料
+                    startDateStr = latest.startDate;
                     expiryDateStr = latest.expiryDate;
                     
                     const expiryObj = new Date(expiryDateStr);
                     expiryObj.setHours(0, 0, 0, 0);
                     
-                    // 計算剩餘天數
                     const diffTime = expiryObj - todayObj;
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
                     if (expiryDateStr >= todayStr) {
                         if (diffDays <= 7 && diffDays >= 0) {
-                            // 剩餘 7 天內：黃色警示
                             currentStatusText = `剩 ${diffDays} 天到期 (${expiryDateStr})`;
                             badgeColor = "bg-amber-50 text-amber-700 border border-amber-300 font-bold";
                         } else {
-                            // 正常使用中
                             currentStatusText = `使用中 (至 ${expiryDateStr})`;
                             badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-200";
                         }
                     } else {
-                        // 已過期：紅色警告
                         currentStatusText = `已過期 (${expiryDateStr})`;
                         badgeColor = "bg-rose-50 text-rose-700 border border-rose-300 font-bold";
                     }
                 }
 
-                // 組裝歷史紀錄清單 HTML
                 let historyHtml = '';
                 if (data.history && data.history.length > 0) {
                     data.history.forEach((h, index) => {
+                        const hPayDate = h.payDate || h.startDate;
                         historyHtml += `
                             <div class="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-xl text-xs mb-1.5 border border-slate-100">
                                 <div>
-                                    <span class="font-semibold text-slate-700">繳費日期：${h.startDate}</span>
+                                    <span class="font-semibold text-slate-700">繳費：${hPayDate}</span>
                                     <span class="text-slate-400 mx-1">|</span>
-                                    <span class="text-slate-500">${h.months}個月 (到期：${h.expiryDate})</span>
+                                    <span class="text-slate-600">起算：${h.startDate} (${h.months}個月)</span>
+                                    <span class="text-slate-400 mx-1">|</span>
+                                    <span class="text-slate-500">到期：${h.expiryDate}</span>
                                     <div class="text-slate-400 mt-0.5">${h.note || '無備註'}</div>
                                 </div>
                                 ${isAdminLoggedIn ? `<button onclick="deleteHistoryItem('${m.id}', ${index})" class="text-rose-600 hover:text-rose-800 font-medium px-2 py-1 bg-rose-50 rounded-lg hover:bg-rose-100 transition">刪除此筆</button>` : ''}
@@ -193,7 +190,7 @@
                             </div>
                             <div>
                                 <h3 class="font-bold text-slate-900 text-base">${m.name}</h3>
-                                <p class="text-xs text-slate-400">繳費日期：<span class="font-medium text-slate-600">${paymentDateStr}</span></p>
+                                <p class="text-xs text-slate-400">繳費日期：<span class="font-medium text-slate-600">${payDateStr}</span> ｜ 起算日期：<span class="font-medium text-slate-600">${startDateStr}</span></p>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -215,9 +212,13 @@
                     <!-- 管理員編輯表單 (預設隱藏) -->
                     <div id="edit-panel-${m.id}" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 mt-3 space-y-3">
                         <h4 class="text-xs font-bold text-slate-700">新增繳費紀錄 / 修正資料</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
-                                <label class="block text-xs text-slate-500 mb-1">起算日期 (繳費日期)</label>
+                                <label class="block text-xs text-slate-500 mb-1">繳費日期</label>
+                                <input type="date" id="pay-date-${m.id}" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">起算日期</label>
                                 <input type="date" id="start-date-${m.id}" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
                             </div>
                             <div>
@@ -227,7 +228,7 @@
                         </div>
                         <div>
                             <label class="block text-xs text-slate-500 mb-1">備註說明</label>
-                            <input type="text" id="note-${m.id}" placeholder="例如：轉帳繳費 / 修正紀錄" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
+                            <input type="text" id="note-${m.id}" placeholder="例如：轉帳繳費 / 補登紀錄" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
                         </div>
                         <div class="flex justify-end gap-2">
                             <button onclick="toggleEditPanel('${m.id}')" class="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-medium rounded-lg">取消</button>
@@ -238,8 +239,10 @@
                 container.appendChild(card);
 
                 // 預填今天的日期
-                const dateInput = document.getElementById(`start-date-${m.id}`);
-                if(dateInput) dateInput.value = todayStr;
+                const payDateInput = document.getElementById(`pay-date-${m.id}`);
+                const startDateInput = document.getElementById(`start-date-${m.id}`);
+                if(payDateInput) payDateInput.value = todayStr;
+                if(startDateInput) startDateInput.value = todayStr;
             });
         }
 
@@ -280,16 +283,17 @@
 
         // 儲存新紀錄到雲端
         window.saveMemberData = async function(memberId) {
+            const payDate = document.getElementById(`pay-date-${memberId}`).value;
             const startDate = document.getElementById(`start-date-${memberId}`).value;
             const months = parseInt(document.getElementById(`months-${memberId}`).value) || 1;
             const note = document.getElementById(`note-${memberId}`).value;
 
-            if (!startDate) {
-                alert("請選擇起算日期！");
+            if (!payDate || !startDate) {
+                alert("請完整選擇繳費日期與起算日期！");
                 return;
             }
 
-            // 計算到期日 (簡單以月為單位計算)
+            // 依據「起算日期」計算到期日
             let start = new Date(startDate);
             start.setMonth(start.getMonth() + months);
             const expiryDate = start.toISOString().split('T')[0];
@@ -298,8 +302,9 @@
                 membersData[memberId] = { name: defaultMembers.find(m => m.id === memberId).name, history: [] };
             }
 
-            // 新增一筆紀錄到歷史陣列中
+            // 新增一筆紀錄到歷史陣列中（包含 payDate 與 startDate）
             membersData[memberId].history.push({
+                payDate,
                 startDate,
                 months,
                 expiryDate,
@@ -320,7 +325,6 @@
         window.deleteHistoryItem = async function(memberId, historyIndex) {
             if (!confirm("確定要刪除這筆紀錄嗎？")) return;
 
-            // 從陣列中移除該筆紀錄
             membersData[memberId].history.splice(historyIndex, 1);
 
             try {
