@@ -38,7 +38,7 @@
                 <span>🔒</span> 請輸入管理員密碼以解鎖編輯與刪除權限：
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto">
-                <input type="password" id="admin-password-input" placeholder="預設密碼: 0000" class="px-3 py-1.5 border border-red-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                <input type="password" id="admin-password-input" placeholder="預設密碼: 0625" class="px-3 py-1.5 border border-red-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500">
                 <button onclick="verifyAdminPassword()" class="px-4 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition">確認解鎖</button>
             </div>
         </div>
@@ -122,16 +122,13 @@
                 
                 let currentStatusText = "尚無繳費紀錄";
                 let badgeColor = "bg-slate-100 text-slate-600 border border-slate-200";
-                let payDateStr = "未記錄";
-                let startDateStr = "-";
-                let expiryDateStr = "-";
+                let displayExpiryStr = "尚無紀錄";
                 let nextSuggestedStartDate = todayStr;
 
                 if (data.history && data.history.length > 0) {
                     const latest = data.history[data.history.length - 1];
-                    payDateStr = latest.payDate || latest.startDate;
-                    startDateStr = latest.startDate;
-                    expiryDateStr = latest.expiryDate;
+                    const expiryDateStr = latest.expiryDate;
+                    displayExpiryStr = expiryDateStr;
                     
                     // 自動以上一筆的到期日作為下一次續費的預設起算日
                     nextSuggestedStartDate = expiryDateStr;
@@ -188,7 +185,7 @@
                             </div>
                             <div>
                                 <h3 class="font-bold text-slate-900 text-base">${m.name}</h3>
-                                <p class="text-xs text-slate-400">繳費日期：<span class="font-medium text-slate-600">${payDateStr}</span> ｜ 起算日期：<span class="font-medium text-slate-600">${startDateStr}</span></p>
+                                <p class="text-xs text-red-600 font-bold mt-0.5">到期日期：${displayExpiryStr}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -281,8 +278,10 @@
                 return;
             }
 
+            // 計算到期日：起算日期加上月數後，再減去 1 天
             let start = new Date(startDate);
             start.setMonth(start.getMonth() + months);
+            start.setDate(start.getDate() - 1);
             const expiryDate = start.toISOString().split('T')[0];
 
             if (!membersData[memberId]) {
