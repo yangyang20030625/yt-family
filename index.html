@@ -38,7 +38,7 @@
                 <span>🔒</span> 請輸入管理員密碼以解鎖編輯與刪除權限：
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto">
-                <input type="password" id="admin-password-input" placeholder="預設密碼: 1234" class="px-3 py-1.5 border border-red-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                <input type="password" id="admin-password-input" placeholder="預設密碼: 0000" class="px-3 py-1.5 border border-red-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500">
                 <button onclick="verifyAdminPassword()" class="px-4 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition">確認解鎖</button>
             </div>
         </div>
@@ -120,26 +120,46 @@
             const container = document.getElementById('members-container');
             container.innerHTML = '';
 
+            const todayObj = new Date();
+            todayObj.setHours(0, 0, 0, 0);
+            const todayStr = todayObj.toISOString().split('T')[0];
+
             defaultMembers.forEach(m => {
                 const data = membersData[m.id] || { name: m.name, history: [] };
                 
-                // 計算目前狀態
+                // 計算目前狀態與提醒標籤
                 let currentStatusText = "尚無繳費紀錄";
-                let badgeColor = "bg-slate-100 text-slate-600";
+                let badgeColor = "bg-slate-100 text-slate-600 border border-slate-200";
+                let paymentDateStr = "未記錄";
                 let expiryDateStr = "-";
 
                 if (data.history && data.history.length > 0) {
                     // 抓取最後一筆或最新的有效紀錄
                     const latest = data.history[data.history.length - 1];
+                    paymentDateStr = latest.startDate; // 取得最近的繳費日期
                     expiryDateStr = latest.expiryDate;
                     
-                    const today = new Date().toISOString().split('T')[0];
-                    if (expiryDateStr >= today) {
-                        currentStatusText = `使用中 (至 ${expiryDateStr})`;
-                        badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+                    const expiryObj = new Date(expiryDateStr);
+                    expiryObj.setHours(0, 0, 0, 0);
+                    
+                    // 計算剩餘天數
+                    const diffTime = expiryObj - todayObj;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (expiryDateStr >= todayStr) {
+                        if (diffDays <= 7 && diffDays >= 0) {
+                            // 剩餘 7 天內：黃色警示
+                            currentStatusText = `剩 ${diffDays} 天到期 (${expiryDateStr})`;
+                            badgeColor = "bg-amber-50 text-amber-700 border border-amber-300 font-bold";
+                        } else {
+                            // 正常使用中
+                            currentStatusText = `使用中 (至 ${expiryDateStr})`;
+                            badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+                        }
                     } else {
+                        // 已過期：紅色警告
                         currentStatusText = `已過期 (${expiryDateStr})`;
-                        badgeColor = "bg-rose-50 text-rose-700 border border-rose-200";
+                        badgeColor = "bg-rose-50 text-rose-700 border border-rose-300 font-bold";
                     }
                 }
 
@@ -150,9 +170,9 @@
                         historyHtml += `
                             <div class="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-xl text-xs mb-1.5 border border-slate-100">
                                 <div>
-                                    <span class="font-semibold text-slate-700">${h.startDate} 起 (${h.months}個月)</span>
+                                    <span class="font-semibold text-slate-700">繳費日期：${h.startDate}</span>
                                     <span class="text-slate-400 mx-1">|</span>
-                                    <span class="text-slate-500">到期：${h.expiryDate}</span>
+                                    <span class="text-slate-500">${h.months}個月 (到期：${h.expiryDate})</span>
                                     <div class="text-slate-400 mt-0.5">${h.note || '無備註'}</div>
                                 </div>
                                 ${isAdminLoggedIn ? `<button onclick="deleteHistoryItem('${m.id}', ${index})" class="text-rose-600 hover:text-rose-800 font-medium px-2 py-1 bg-rose-50 rounded-lg hover:bg-rose-100 transition">刪除此筆</button>` : ''}
@@ -166,18 +186,18 @@
                 const card = document.createElement('div');
                 card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3";
                 card.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 text-lg">
                                 ${m.name.charAt(0)}
                             </div>
                             <div>
                                 <h3 class="font-bold text-slate-900 text-base">${m.name}</h3>
-                                <p class="text-xs text-slate-400">分攤金額：$80 / 月</p>
+                                <p class="text-xs text-slate-400">繳費日期：<span class="font-medium text-slate-600">${paymentDateStr}</span></p>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-xs px-3 py-1 rounded-lg font-medium ${badgeColor}">
+                            <span class="text-xs px-3 py-1.5 rounded-lg font-medium ${badgeColor}">
                                 ${currentStatusText}
                             </span>
                             ${isAdminLoggedIn ? `<button onclick="toggleEditPanel('${m.id}')" class="px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition">編輯/續費</button>` : ''}
@@ -197,7 +217,7 @@
                         <h4 class="text-xs font-bold text-slate-700">新增繳費紀錄 / 修正資料</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs text-slate-500 mb-1">起算日期</label>
+                                <label class="block text-xs text-slate-500 mb-1">起算日期 (繳費日期)</label>
                                 <input type="date" id="start-date-${m.id}" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
                             </div>
                             <div>
@@ -218,7 +238,6 @@
                 container.appendChild(card);
 
                 // 預填今天的日期
-                const todayStr = new Date().toISOString().split('T')[0];
                 const dateInput = document.getElementById(`start-date-${m.id}`);
                 if(dateInput) dateInput.value = todayStr;
             });
