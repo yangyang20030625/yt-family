@@ -1,285 +1,285 @@
-!DOCTYPE html
-html lang=zh-TW
-head
-    meta charset=UTF-8
-    meta name=viewport content=width=device-width, initial-scale=1.0
-    titleYouTube Premium 家庭方案管理系統title
-    !-- Tailwind CSS CDN --
-    script src=httpscdn.tailwindcss.comscript
-    style
-        @import url('httpsfonts.googleapis.comcss2family=Noto+Sans+TCwght@400;500;700&display=swap');
-        body { font-family 'Noto Sans TC', sans-serif; }
-    style
-head
-body class=bg-slate-50 text-slate-800 min-h-screen
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Premium 家庭方案管理系統</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    div class=max-w-4xl mx-auto px-4 py-8
-        !-- 標題與狀態列 --
-        header class=flex flex-col smflex-row justify-between items-start smitems-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 gap-4
-            div
-                h1 class=text-2xl font-bold text-slate-900 flex items-center gap-2
-                    span class=text-red-600▶span YouTube Premium 家庭方案
-                h1
-                p class=text-sm text-slate-500 mt-1方案月費：$479  月｜每人分攤：$80  月p
-            div
-            div class=flex items-center gap-3 w-full smw-auto justify-between smjustify-end
-                span id=sync-status class=text-xs px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 font-medium flex items-center gap-1.5
-                    span class=w-2 h-2 rounded-full bg-amber-500 animate-pulsespan 連線同步中...
-                span
-                button id=admin-toggle-btn onclick=toggleAdminMode() class=px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-xl hoverbg-slate-800 transition shadow-sm
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- 標題與狀態列 -->
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <span class="text-red-600">▶</span> YouTube Premium 家庭方案
+                </h1>
+                <p class="text-sm text-slate-500 mt-1">方案月費：$479 / 月｜每人分攤：$80 / 月</p>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                <span id="sync-status" class="text-xs px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 font-medium flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> 連線同步中...
+                </span>
+                <button id="admin-toggle-btn" onclick="toggleAdminMode()" class="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 transition shadow-sm">
                     管理員模式
-                button
-            div
-        header
+                </button>
+            </div>
+        </header>
 
-        !-- 管理員驗證面板 (預設隱藏) --
-        div id=admin-auth-panel class=hidden bg-red-50 border border-red-200 p-4 rounded-2xl mb-6 flex flex-col smflex-row items-center justify-between gap-3
-            div class=text-sm text-red-800 font-medium flex items-center gap-2
-                span🔒span 請輸入管理員密碼以解鎖編輯與刪除權限：
-            div
-            div class=flex items-center gap-2 w-full smw-auto
-                input type=password id=admin-password-input placeholder=預設密碼 1234 class=px-3 py-1.5 border border-red-300 rounded-lg text-sm bg-white focusoutline-none focusring-2 focusring-red-500
-                button onclick=verifyAdminPassword() class=px-4 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hoverbg-red-700 transition確認解鎖button
-            div
-        div
+        <!-- 管理員驗證面板 (預設隱藏) -->
+        <div id="admin-auth-panel" class="hidden bg-red-50 border border-red-200 p-4 rounded-2xl mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="text-sm text-red-800 font-medium flex items-center gap-2">
+                <span>🔒</span> 請輸入管理員密碼以解鎖編輯與刪除權限：
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <input type="password" id="admin-password-input" placeholder="預設密碼: 1234" class="px-3 py-1.5 border border-red-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                <button onclick="verifyAdminPassword()" class="px-4 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition">確認解鎖</button>
+            </div>
+        </div>
 
-        !-- 成員列表容器 --
-        main id=members-container class=space-y-4
-            !-- 動態載入成員卡片 --
-        main
-    div
+        <!-- 成員列表容器 -->
+        <main id="members-container" class="space-y-4">
+            <!-- 動態載入成員卡片 -->
+        </main>
+    </div>
 
-    !-- Firebase SDKs --
-    script type=module
-        import { initializeApp } from httpswww.gstatic.comfirebasejs10.8.0firebase-app.js;
-        import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from httpswww.gstatic.comfirebasejs10.8.0firebase-firestore.js;
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-         ==================== 您的 Firebase 設定 ====================
+        // ==================== 您的 Firebase 設定 ====================
         const firebaseConfig = {
-            apiKey AIzaSyAzVp...（請確認您原本的設定維持在此）,
-            authDomain yt-family-billing.firebaseapp.com,
-            projectId yt-family-billing,
-            storageBucket yt-family-billing.appspot.com,
-            messagingSenderId 567891234,
-            appId 1567891234webabcdef
+            apiKey: "AIzaSyAzVp...（請確認您原本的設定維持在此）",
+            authDomain: "yt-family-billing.firebaseapp.com",
+            projectId: "yt-family-billing",
+            storageBucket: "yt-family-billing.appspot.com",
+            messagingSenderId: "567891234",
+            appId: "1:567891234:web:abcdef"
         };
-         ============================================================
+        // ============================================================
 
-         初始化 Firebase
+        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-         管理員密碼設定 (可自行修改)
-        const ADMIN_SECRET_CODE = 1234;
+        // 管理員密碼設定 (可自行修改)
+        const ADMIN_SECRET_CODE = "1234";
         let isAdminLoggedIn = false;
 
-         五位成員預設名單
+        // 五位成員預設名單
         const defaultMembers = [
-            { id member_1, name 單 },
-            { id member_2, name 李汪 },
-            { id member_3, name 資耘 },
-            { id member_4, name 黃建鈞 },
-            { id member_5, name 黃柏諺 }
+            { id: "member_1", name: "單" },
+            { id: "member_2", name: "李汪" },
+            { id: "member_3", name: "資耘" },
+            { id: "member_4", name: "黃建鈞" },
+            { id: "member_5", name: "黃柏諺" }
         ];
 
         let membersData = {};
 
-         頁面載入時抓取雲端資料
-        window.addEventListener('DOMContentLoaded', async () = {
+        // 頁面載入時抓取雲端資料
+        window.addEventListener('DOMContentLoaded', async () => {
             await fetchCloudData();
         });
 
         async function fetchCloudData() {
             const statusEl = document.getElementById('sync-status');
             try {
-                const querySnapshot = await getDocs(collection(db, youtube_family_v2));
+                const querySnapshot = await getDocs(collection(db, "youtube_family_v2"));
                 if (querySnapshot.empty) {
-                     若雲端無資料，初始化寫入預設值
+                    // 若雲端無資料，初始化寫入預設值
                     for (let m of defaultMembers) {
-                        membersData[m.id] = { name m.name, history [] };
-                        await setDoc(doc(db, youtube_family_v2, m.id), membersData[m.id]);
+                        membersData[m.id] = { name: m.name, history: [] };
+                        await setDoc(doc(db, "youtube_family_v2", m.id), membersData[m.id]);
                     }
                 } else {
-                    querySnapshot.forEach((docSnap) = {
+                    querySnapshot.forEach((docSnap) => {
                         membersData[docSnap.id] = docSnap.data();
                     });
                 }
-                statusEl.innerHTML = `span class=w-2 h-2 rounded-full bg-emerald-500span 雲端同步完成`;
-                statusEl.className = text-xs px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-medium flex items-center gap-1.5;
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> 雲端同步完成`;
+                statusEl.className = "text-xs px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-medium flex items-center gap-1.5";
                 renderUI();
             } catch (error) {
-                console.error(連線錯誤, error);
-                statusEl.innerHTML = `span class=w-2 h-2 rounded-full bg-red-500span 雲端連線失敗`;
-                statusEl.className = text-xs px-3 py-1.5 rounded-full bg-red-50 text-red-700 font-medium flex items-center gap-1.5;
-                alert(無法連線至雲端資料庫，請確認 Firestore 資料庫是否已經在 Firebase 控制台中建立。);
+                console.error("連線錯誤:", error);
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> 雲端連線失敗`;
+                statusEl.className = "text-xs px-3 py-1.5 rounded-full bg-red-50 text-red-700 font-medium flex items-center gap-1.5";
+                alert("無法連線至雲端資料庫，請確認 Firestore 資料庫是否已經在 Firebase 控制台中建立。");
             }
         }
 
-         渲染畫面
+        // 渲染畫面
         function renderUI() {
             const container = document.getElementById('members-container');
             container.innerHTML = '';
 
-            defaultMembers.forEach(m = {
-                const data = membersData[m.id]  { name m.name, history [] };
+            defaultMembers.forEach(m => {
+                const data = membersData[m.id] || { name: m.name, history: [] };
                 
-                 計算目前狀態
-                let currentStatusText = 尚無繳費紀錄;
-                let badgeColor = bg-slate-100 text-slate-600;
-                let expiryDateStr = -;
+                // 計算目前狀態
+                let currentStatusText = "尚無繳費紀錄";
+                let badgeColor = "bg-slate-100 text-slate-600";
+                let expiryDateStr = "-";
 
-                if (data.history && data.history.length  0) {
-                     抓取最後一筆或最新的有效紀錄
+                if (data.history && data.history.length > 0) {
+                    // 抓取最後一筆或最新的有效紀錄
                     const latest = data.history[data.history.length - 1];
                     expiryDateStr = latest.expiryDate;
                     
                     const today = new Date().toISOString().split('T')[0];
-                    if (expiryDateStr = today) {
+                    if (expiryDateStr >= today) {
                         currentStatusText = `使用中 (至 ${expiryDateStr})`;
-                        badgeColor = bg-emerald-50 text-emerald-700 border border-emerald-200;
+                        badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-200";
                     } else {
                         currentStatusText = `已過期 (${expiryDateStr})`;
-                        badgeColor = bg-rose-50 text-rose-700 border border-rose-200;
+                        badgeColor = "bg-rose-50 text-rose-700 border border-rose-200";
                     }
                 }
 
-                 組裝歷史紀錄清單 HTML
+                // 組裝歷史紀錄清單 HTML
                 let historyHtml = '';
-                if (data.history && data.history.length  0) {
-                    data.history.forEach((h, index) = {
+                if (data.history && data.history.length > 0) {
+                    data.history.forEach((h, index) => {
                         historyHtml += `
-                            div class=flex items-center justify-between py-2 px-3 bg-slate-50 rounded-xl text-xs mb-1.5 border border-slate-100
-                                div
-                                    span class=font-semibold text-slate-700${h.startDate} 起 (${h.months}個月)span
-                                    span class=text-slate-400 mx-1span
-                                    span class=text-slate-500到期：${h.expiryDate}span
-                                    div class=text-slate-400 mt-0.5${h.note  '無備註'}div
-                                div
-                                ${isAdminLoggedIn  `button onclick=deleteHistoryItem('${m.id}', ${index}) class=text-rose-600 hovertext-rose-800 font-medium px-2 py-1 bg-rose-50 rounded-lg hoverbg-rose-100 transition刪除此筆button`  ''}
-                            div
+                            <div class="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-xl text-xs mb-1.5 border border-slate-100">
+                                <div>
+                                    <span class="font-semibold text-slate-700">${h.startDate} 起 (${h.months}個月)</span>
+                                    <span class="text-slate-400 mx-1">|</span>
+                                    <span class="text-slate-500">到期：${h.expiryDate}</span>
+                                    <div class="text-slate-400 mt-0.5">${h.note || '無備註'}</div>
+                                </div>
+                                ${isAdminLoggedIn ? `<button onclick="deleteHistoryItem('${m.id}', ${index})" class="text-rose-600 hover:text-rose-800 font-medium px-2 py-1 bg-rose-50 rounded-lg hover:bg-rose-100 transition">刪除此筆</button>` : ''}
+                            </div>
                         `;
                     });
                 } else {
-                    historyHtml = `div class=text-xs text-slate-400 italic py-1目前沒有繳費紀錄div`;
+                    historyHtml = `<div class="text-xs text-slate-400 italic py-1">目前沒有繳費紀錄</div>`;
                 }
 
                 const card = document.createElement('div');
-                card.className = bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3;
+                card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3";
                 card.innerHTML = `
-                    div class=flex flex-col smflex-row smitems-center justify-between gap-2
-                        div class=flex items-center gap-3
-                            div class=w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 text-lg
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 text-lg">
                                 ${m.name.charAt(0)}
-                            div
-                            div
-                                h3 class=font-bold text-slate-900 text-base${m.name}h3
-                                p class=text-xs text-slate-400分攤金額：$80  月p
-                            div
-                        div
-                        div class=flex items-center gap-2
-                            span class=text-xs px-3 py-1 rounded-lg font-medium ${badgeColor}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-base">${m.name}</h3>
+                                <p class="text-xs text-slate-400">分攤金額：$80 / 月</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs px-3 py-1 rounded-lg font-medium ${badgeColor}">
                                 ${currentStatusText}
-                            span
-                            ${isAdminLoggedIn  `button onclick=toggleEditPanel('${m.id}') class=px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg hoverbg-slate-800 transition編輯續費button`  ''}
-                        div
-                    div
+                            </span>
+                            ${isAdminLoggedIn ? `<button onclick="toggleEditPanel('${m.id}')" class="px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition">編輯/續費</button>` : ''}
+                        </div>
+                    </div>
 
-                    !-- 歷史紀錄與展開區塊 --
-                    div class=border-t border-slate-100 pt-3 mt-1
-                        p class=text-xs font-semibold text-slate-500 mb-2繳費歷史紀錄：p
-                        div class=space-y-1
+                    <!-- 歷史紀錄與展開區塊 -->
+                    <div class="border-t border-slate-100 pt-3 mt-1">
+                        <p class="text-xs font-semibold text-slate-500 mb-2">繳費歷史紀錄：</p>
+                        <div class="space-y-1">
                             ${historyHtml}
-                        div
-                    div
+                        </div>
+                    </div>
 
-                    !-- 管理員編輯表單 (預設隱藏) --
-                    div id=edit-panel-${m.id} class=hidden bg-slate-50 p-4 rounded-xl border border-slate-200 mt-3 space-y-3
-                        h4 class=text-xs font-bold text-slate-700新增繳費紀錄  修正資料h4
-                        div class=grid grid-cols-1 smgrid-cols-2 gap-3
-                            div
-                                label class=block text-xs text-slate-500 mb-1起算日期label
-                                input type=date id=start-date-${m.id} class=w-full text-xs p-2 border border-slate-200 rounded-lg bg-white
-                            div
-                            div
-                                label class=block text-xs text-slate-500 mb-1購買月數label
-                                input type=number id=months-${m.id} value=1 min=1 class=w-full text-xs p-2 border border-slate-200 rounded-lg bg-white
-                            div
-                        div
-                        div
-                            label class=block text-xs text-slate-500 mb-1備註說明label
-                            input type=text id=note-${m.id} placeholder=例如：轉帳繳費  修正紀錄 class=w-full text-xs p-2 border border-slate-200 rounded-lg bg-white
-                        div
-                        div class=flex justify-end gap-2
-                            button onclick=toggleEditPanel('${m.id}') class=px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-medium rounded-lg取消button
-                            button onclick=saveMemberData('${m.id}') class=px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hoverbg-emerald-700儲存至雲端button
-                        div
-                    div
+                    <!-- 管理員編輯表單 (預設隱藏) -->
+                    <div id="edit-panel-${m.id}" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 mt-3 space-y-3">
+                        <h4 class="text-xs font-bold text-slate-700">新增繳費紀錄 / 修正資料</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">起算日期</label>
+                                <input type="date" id="start-date-${m.id}" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">購買月數</label>
+                                <input type="number" id="months-${m.id}" value="1" min="1" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">備註說明</label>
+                            <input type="text" id="note-${m.id}" placeholder="例如：轉帳繳費 / 修正紀錄" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button onclick="toggleEditPanel('${m.id}')" class="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-medium rounded-lg">取消</button>
+                            <button onclick="saveMemberData('${m.id}')" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700">儲存至雲端</button>
+                        </div>
+                    </div>
                 `;
                 container.appendChild(card);
 
-                 預填今天的日期
+                // 預填今天的日期
                 const todayStr = new Date().toISOString().split('T')[0];
                 const dateInput = document.getElementById(`start-date-${m.id}`);
                 if(dateInput) dateInput.value = todayStr;
             });
         }
 
-         切換管理員解鎖面板
+        // 切換管理員解鎖面板
         window.toggleAdminMode = function() {
             if (isAdminLoggedIn) {
                 isAdminLoggedIn = false;
-                document.getElementById('admin-toggle-btn').innerText = 管理員模式;
+                document.getElementById('admin-toggle-btn').innerText = "管理員模式";
                 document.getElementById('admin-auth-panel').classList.add('hidden');
                 renderUI();
-                alert(已登出管理員模式);
+                alert("已登出管理員模式");
             } else {
                 const authPanel = document.getElementById('admin-auth-panel');
                 authPanel.classList.toggle('hidden');
             }
         }
 
-         驗證管理員密碼
+        // 驗證管理員密碼
         window.verifyAdminPassword = function() {
             const pwd = document.getElementById('admin-password-input').value;
             if (pwd === ADMIN_SECRET_CODE) {
                 isAdminLoggedIn = true;
                 document.getElementById('admin-auth-panel').classList.add('hidden');
-                document.getElementById('admin-toggle-btn').innerText = 退出管理員;
-                document.getElementById('admin-password-input').value = ;
+                document.getElementById('admin-toggle-btn').innerText = "退出管理員";
+                document.getElementById('admin-password-input').value = "";
                 renderUI();
-                alert(管理員驗證成功！現在可以進行編輯與刪除紀錄。);
+                alert("管理員驗證成功！現在可以進行編輯與刪除紀錄。");
             } else {
-                alert(密碼錯誤！);
+                alert("密碼錯誤！");
             }
         }
 
-         切換單一成員編輯面板
+        // 切換單一成員編輯面板
         window.toggleEditPanel = function(memberId) {
             const panel = document.getElementById(`edit-panel-${memberId}`);
             panel.classList.toggle('hidden');
         }
 
-         儲存新紀錄到雲端
+        // 儲存新紀錄到雲端
         window.saveMemberData = async function(memberId) {
             const startDate = document.getElementById(`start-date-${memberId}`).value;
-            const months = parseInt(document.getElementById(`months-${memberId}`).value)  1;
+            const months = parseInt(document.getElementById(`months-${memberId}`).value) || 1;
             const note = document.getElementById(`note-${memberId}`).value;
 
             if (!startDate) {
-                alert(請選擇起算日期！);
+                alert("請選擇起算日期！");
                 return;
             }
 
-             計算到期日 (簡單以月為單位計算)
+            // 計算到期日 (簡單以月為單位計算)
             let start = new Date(startDate);
             start.setMonth(start.getMonth() + months);
             const expiryDate = start.toISOString().split('T')[0];
 
             if (!membersData[memberId]) {
-                membersData[memberId] = { name defaultMembers.find(m = m.id === memberId).name, history [] };
+                membersData[memberId] = { name: defaultMembers.find(m => m.id === memberId).name, history: [] };
             }
 
-             新增一筆紀錄到歷史陣列中
+            // 新增一筆紀錄到歷史陣列中
             membersData[memberId].history.push({
                 startDate,
                 months,
@@ -288,31 +288,31 @@ body class=bg-slate-50 text-slate-800 min-h-screen
             });
 
             try {
-                await setDoc(doc(db, youtube_family_v2, memberId), membersData[memberId]);
-                alert(已成功儲存至雲端！);
+                await setDoc(doc(db, "youtube_family_v2", memberId), membersData[memberId]);
+                alert("已成功儲存至雲端！");
                 renderUI();
             } catch (error) {
-                console.error(儲存失敗, error);
-                alert(儲存失敗，請檢查網路或 Firebase 權限。);
+                console.error("儲存失敗:", error);
+                alert("儲存失敗，請檢查網路或 Firebase 權限。");
             }
         }
 
-         刪除指定的歷史紀錄項目
+        // 刪除指定的歷史紀錄項目
         window.deleteHistoryItem = async function(memberId, historyIndex) {
-            if (!confirm(確定要刪除這筆紀錄嗎？)) return;
+            if (!confirm("確定要刪除這筆紀錄嗎？")) return;
 
-             從陣列中移除該筆紀錄
+            // 從陣列中移除該筆紀錄
             membersData[memberId].history.splice(historyIndex, 1);
 
             try {
-                await setDoc(doc(db, youtube_family_v2, memberId), membersData[memberId]);
-                alert(已成功刪除該筆紀錄！);
+                await setDoc(doc(db, "youtube_family_v2", memberId), membersData[memberId]);
+                alert("已成功刪除該筆紀錄！");
                 renderUI();
             } catch (error) {
-                console.error(刪除失敗, error);
-                alert(刪除失敗，請再試一次。);
+                console.error("刪除失敗:", error);
+                alert("刪除失敗，請再試一次。");
             }
         }
-    script
-body
-html
+    </script>
+</body>
+</html>
