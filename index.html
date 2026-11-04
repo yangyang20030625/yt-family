@@ -278,14 +278,13 @@
                 return;
             }
 
-           // 固定週期計算：起算日為 7 號，到期日固定為次月（或多個月後）的 6 號
-            let start = new Date(startDate);
-            let targetYear = start.getFullYear();
-            let targetMonth = start.getMonth() + months;
+          // 修正時區誤差：手動組合絕對準確的 YYYY-MM-06 格式
+            let start = new Date(startDate + 'T00:00:00'); // 強制以本地時間解析
+            start.setMonth(start.getMonth() + months);
             
-            // 設定為目標月份的第 6 天
-            let expiryDateObj = new Date(targetYear, targetMonth, 6);
-            const expiryDate = expiryDateObj.toISOString().split('T')[0];
+            let y = start.getFullYear();
+            let m = String(start.getMonth() + 1).padStart(2, '0');
+            const expiryDate = `${y}-${m}-06`;
 
             if (!membersData[memberId]) {
                 membersData[memberId] = { name: defaultMembers.find(m => m.id === memberId).name, history: [] };
